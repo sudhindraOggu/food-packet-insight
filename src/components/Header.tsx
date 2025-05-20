@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Apple } from 'lucide-react';
+import { Apple, AlertCircle } from 'lucide-react';
 
 const Header = () => {
   return (
@@ -9,6 +9,10 @@ const Header = () => {
         <div className="flex items-center gap-2">
           <Apple className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-bold text-foreground">NutriScan</h1>
+          <span className="hidden sm:inline-flex text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            Health Impact Analyzer
+          </span>
         </div>
         <nav className="flex items-center gap-4 sm:gap-6">
           <a href="#" className="text-sm font-medium hover:underline underline-offset-4">Home</a>
