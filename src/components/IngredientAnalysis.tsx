@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, AlertCircle, ShieldAlert, Wine, Heart, HeartCrack, HealthIcon, Skull } from "lucide-react";
+import { Info, AlertCircle, ShieldAlert, Wine, Heart, HeartCrack, Skull } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/components/ui/use-toast";
 
