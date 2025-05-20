@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +5,9 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, AlertCircle, ShieldAlert } from "lucide-react";
+import { Info, AlertCircle, ShieldAlert, Wine, Heart, HeartCrack, HealthIcon, Skull } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "@/components/ui/use-toast";
 
 // Expanded ingredient analysis data with health impacts
 const commonAllergens = [
@@ -215,6 +215,87 @@ const commonAdditives = {
     regulatoryStatus: "FDA approved with different classifications (I-IV)",
     dailyLimit: "Varies by type",
     alternativesRisk: "Moderate, depends on manufacturing process"
+  },
+  // Adding alcohol and related compounds
+  "alcohol": {
+    description: "Psychoactive substance found in alcoholic beverages that affects the central nervous system.",
+    category: "psychoactive substance",
+    concern: "high",
+    shortTermEffects: "Impaired judgment, coordination, and reflexes; nausea; vomiting; dehydration; intoxication",
+    longTermEffects: "Liver damage, cardiovascular disease, increased cancer risk, dependency and addiction, brain damage",
+    regulatoryStatus: "Legal but regulated, restricted for those under 21 in the US",
+    dailyLimit: "If consumed: no more than 1 drink/day for women, 2 drinks/day for men (CDC)",
+    alternativesRisk: "Very high, especially with regular consumption"
+  },
+  "ethanol": {
+    description: "The primary type of alcohol in alcoholic beverages.",
+    category: "psychoactive substance",
+    concern: "high",
+    shortTermEffects: "Same as alcohol: impaired cognition, slowed reflexes, intoxication",
+    longTermEffects: "Liver cirrhosis, neurological damage, addiction, increased risk of multiple cancers",
+    regulatoryStatus: "Legal in beverages but regulated, industrial forms restricted",
+    dailyLimit: "If consumed: no more than 1 drink/day for women, 2 drinks/day for men (CDC)",
+    alternativesRisk: "Very high, especially with regular consumption"
+  },
+  "ethyl alcohol": {
+    description: "Another name for ethanol, the alcohol found in alcoholic beverages.",
+    category: "psychoactive substance",
+    concern: "high",
+    shortTermEffects: "Same as alcohol and ethanol",
+    longTermEffects: "Same as alcohol and ethanol",
+    regulatoryStatus: "Legal but regulated",
+    dailyLimit: "If consumed: no more than 1 drink/day for women, 2 drinks/day for men (CDC)",
+    alternativesRisk: "Very high, especially with regular consumption"
+  },
+  "wine": {
+    description: "Alcoholic beverage made from fermented grapes containing ethanol.",
+    category: "alcoholic beverage",
+    concern: "high",
+    shortTermEffects: "Intoxication, impaired judgment, hangover",
+    longTermEffects: "Liver damage, addiction, increased cancer risk, cardiovascular effects (both positive and negative)",
+    regulatoryStatus: "Legal but regulated and age-restricted",
+    dailyLimit: "If consumed: no more than 1 glass/day for women, 1-2 glasses/day for men",
+    alternativesRisk: "High, despite some reported cardiovascular benefits from moderate consumption"
+  },
+  "beer": {
+    description: "Alcoholic beverage made from fermented grains containing ethanol.",
+    category: "alcoholic beverage",
+    concern: "high",
+    shortTermEffects: "Intoxication, impaired judgment, hangover",
+    longTermEffects: "Liver damage, addiction, increased cancer risk, weight gain",
+    regulatoryStatus: "Legal but regulated and age-restricted",
+    dailyLimit: "If consumed: no more than 1 serving/day for women, 1-2 servings/day for men",
+    alternativesRisk: "High with regular consumption"
+  },
+  "liquor": {
+    description: "Distilled alcoholic beverage with high ethanol content.",
+    category: "alcoholic beverage",
+    concern: "high",
+    shortTermEffects: "Rapid intoxication, severe impairment, increased risk of alcohol poisoning",
+    longTermEffects: "Severe liver damage, addiction, increased cancer risk, neurological damage",
+    regulatoryStatus: "Legal but regulated and age-restricted",
+    dailyLimit: "If consumed: no more than 1 shot/day for women, 1-2 shots/day for men",
+    alternativesRisk: "Very high due to concentrated alcohol content"
+  },
+  "spirits": {
+    description: "Distilled alcoholic beverages with high ethanol content.",
+    category: "alcoholic beverage",
+    concern: "high",
+    shortTermEffects: "Rapid intoxication, severe impairment, increased risk of alcohol poisoning",
+    longTermEffects: "Severe liver damage, addiction, increased cancer risk, neurological damage",
+    regulatoryStatus: "Legal but regulated and age-restricted",
+    dailyLimit: "If consumed: no more than 1 serving/day for women, 1-2 servings/day for men",
+    alternativesRisk: "Very high due to concentrated alcohol content"
+  },
+  "sulfites": {
+    description: "Preservatives used in wine and food that can cause reactions in sensitive individuals.",
+    category: "preservative",
+    concern: "moderate",
+    shortTermEffects: "Headaches, breathing problems in asthmatics, allergic reactions in sensitive individuals",
+    longTermEffects: "Unknown long-term effects, primarily immediate sensitivity concerns",
+    regulatoryStatus: "FDA approved but requires labeling on products containing >10ppm",
+    dailyLimit: "ADI of 0.7 mg/kg body weight/day (WHO)",
+    alternativesRisk: "Moderate, particularly for sensitive individuals and asthmatics"
   }
 };
 
@@ -257,6 +338,13 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
     .map(item => item.trim())
     .filter(item => item !== '');
 
+  // Check for alcohol content
+  const alcoholicIngredients = ingredientList.filter(ingredient => 
+    ['alcohol', 'ethanol', 'ethyl alcohol', 'wine', 'beer', 'liquor', 'spirits'].some(term => 
+      ingredient.includes(term)
+    )
+  );
+
   // Find potential allergens
   const potentialAllergens = ingredientList.filter(ingredient => 
     commonAllergens.some(allergen => ingredient.includes(allergen))
@@ -278,6 +366,17 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
 
   // Calculate health risk score (based on additives and their concern levels)
   const healthRiskScore = calculateHealthRiskScore(ingredientList, commonAdditives);
+
+  // Show a toast notification if alcoholic ingredients are found
+  React.useEffect(() => {
+    if (alcoholicIngredients.length > 0) {
+      toast({
+        title: "Alcohol Alert",
+        description: "This product contains alcohol which has significant health implications.",
+        variant: "destructive",
+      });
+    }
+  }, [alcoholicIngredients]);
 
   // Display the analysis
   return (
@@ -345,8 +444,26 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
                     <span className="text-sm">Additives Detected</span>
                     <span className="text-sm font-medium">{foundAdditives.length}</span>
                   </div>
+                  {alcoholicIngredients.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm">Alcohol Content</span>
+                      <span className="text-sm font-medium text-red-500 font-bold">Detected</span>
+                    </div>
+                  )}
                 </div>
               </div>
+              
+              {alcoholicIngredients.length > 0 && (
+                <>
+                  <Separator />
+                  <Alert variant="destructive" className="flex items-center">
+                    <Wine className="h-4 w-4 mr-2" />
+                    <AlertDescription>
+                      <strong>Alcohol Warning:</strong> This product contains alcohol which may be harmful to your health, impair judgment, and is not suitable for pregnant women, those under the legal drinking age, or individuals with certain health conditions.
+                    </AlertDescription>
+                  </Alert>
+                </>
+              )}
               
               {foundAdditives.length > 0 && (
                 <>
@@ -390,10 +507,13 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
                   const isAllergen = commonAllergens.some(allergen => 
                     ingredient.includes(allergen)
                   );
+                  const isAlcoholic = ['alcohol', 'ethanol', 'ethyl alcohol', 'wine', 'beer', 'liquor', 'spirits'].some(term => 
+                    ingredient.includes(term)
+                  );
                   
                   // Determine concern level if it's an additive
                   let concernLevel = "low";
-                  if (isAdditive) {
+                  if (isAdditive || isAlcoholic) {
                     const matchedAdditive = Object.entries(commonAdditives).find(([key]) => 
                       ingredient.includes(key)
                     );
@@ -407,7 +527,8 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
                       <span className="text-sm">{ingredient}</span>
                       <div className="ml-auto flex gap-2">
                         {isAllergen && <Badge variant="destructive">Allergen</Badge>}
-                        {isAdditive && (
+                        {isAlcoholic && <Badge variant="destructive">Alcohol</Badge>}
+                        {(isAdditive || isAlcoholic) && (
                           <Badge 
                             variant={
                               concernLevel === "high" ? "destructive" : 
@@ -432,10 +553,26 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Health Impact Assessment</h3>
               
-              {foundAdditives.length > 0 ? (
+              {alcoholicIngredients.length > 0 && (
+                <Alert variant="destructive" className="mb-4">
+                  <Skull className="h-4 w-4" />
+                  <AlertDescription className="font-medium">
+                    This product contains alcohol which has significant health implications:
+                    <ul className="list-disc pl-5 mt-2 space-y-1">
+                      <li>Impaired judgment and coordination</li>
+                      <li>Liver damage and potential liver disease with regular consumption</li>
+                      <li>Increased risk of several types of cancer</li>
+                      <li>Addiction and dependency concerns</li>
+                      <li>Not suitable during pregnancy, while driving, or operating machinery</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {(foundAdditives.length > 0 || alcoholicIngredients.length > 0) ? (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    Below is an assessment of the potential health impacts of additives found in this product:
+                    Below is an assessment of the potential health impacts of ingredients found in this product:
                   </p>
                   
                   <div className="overflow-x-auto">
@@ -449,7 +586,8 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {foundAdditives.map((additive, index) => {
+                        {/* Display alcoholic ingredients first */}
+                        {alcoholicIngredients.map((additive, index) => {
                           const matchedAdditive = Object.entries(commonAdditives).find(([key]) => 
                             additive.includes(key)
                           );
@@ -458,19 +596,11 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
                           const [key, info] = matchedAdditive;
                           
                           return (
-                            <TableRow key={index}>
+                            <TableRow key={`alcohol-${index}`} className="bg-red-50 dark:bg-red-950/10">
                               <TableCell className="font-medium">{additive}</TableCell>
                               <TableCell>
-                                <Badge 
-                                  variant={
-                                    info.concern === "high" ? "destructive" : 
-                                    info.concern === "moderate" ? "outline" :
-                                    "secondary"
-                                  }
-                                >
-                                  {info.concern === "high" ? "High" : 
-                                   info.concern === "moderate" ? "Moderate" : 
-                                   "Low"}
+                                <Badge variant="destructive">
+                                  High
                                 </Badge>
                               </TableCell>
                               <TableCell>{info.shortTermEffects}</TableCell>
@@ -478,6 +608,39 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
                             </TableRow>
                           );
                         })}
+                        
+                        {/* Then display other additives */}
+                        {foundAdditives
+                          .filter(additive => !alcoholicIngredients.includes(additive))
+                          .map((additive, index) => {
+                            const matchedAdditive = Object.entries(commonAdditives).find(([key]) => 
+                              additive.includes(key)
+                            );
+                            
+                            if (!matchedAdditive) return null;
+                            const [key, info] = matchedAdditive;
+                            
+                            return (
+                              <TableRow key={index}>
+                                <TableCell className="font-medium">{additive}</TableCell>
+                                <TableCell>
+                                  <Badge 
+                                    variant={
+                                      info.concern === "high" ? "destructive" : 
+                                      info.concern === "moderate" ? "outline" :
+                                      "secondary"
+                                    }
+                                  >
+                                    {info.concern === "high" ? "High" : 
+                                     info.concern === "moderate" ? "Moderate" : 
+                                     "Low"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{info.shortTermEffects}</TableCell>
+                                <TableCell>{info.longTermEffects}</TableCell>
+                              </TableRow>
+                            );
+                          })}
                       </TableBody>
                     </Table>
                   </div>
@@ -485,25 +648,31 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
                   <div className="mt-6">
                     <h4 className="text-md font-medium mb-2">Regulatory Information</h4>
                     <div className="space-y-3">
-                      {foundAdditives.map((additive, index) => {
-                        const matchedAdditive = Object.entries(commonAdditives).find(([key]) => 
-                          additive.includes(key)
-                        );
-                        
-                        if (!matchedAdditive) return null;
-                        const [key, info] = matchedAdditive;
-                        
-                        return (
-                          <div key={index} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-md">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium">{additive}</span>
-                              <Badge variant="outline">{info.category}</Badge>
+                      {(alcoholicIngredients.length > 0 ? alcoholicIngredients : [])
+                        .concat(foundAdditives.filter(additive => !alcoholicIngredients.includes(additive)))
+                        .map((additive, index) => {
+                          const matchedAdditive = Object.entries(commonAdditives).find(([key]) => 
+                            additive.includes(key)
+                          );
+                          
+                          if (!matchedAdditive) return null;
+                          const [key, info] = matchedAdditive;
+                          
+                          return (
+                            <div key={index} className={`p-3 ${
+                              ['alcohol', 'ethanol', 'ethyl alcohol', 'wine', 'beer', 'liquor', 'spirits'].some(term => 
+                                additive.includes(term)
+                              ) ? 'bg-red-50 dark:bg-red-950/20' : 'bg-gray-50 dark:bg-gray-800/50'
+                            } rounded-md`}>
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">{additive}</span>
+                                <Badge variant="outline">{info.category}</Badge>
+                              </div>
+                              <p className="text-sm mt-1"><strong>Regulatory Status:</strong> {info.regulatoryStatus}</p>
+                              <p className="text-sm mt-1"><strong>Recommended Limit:</strong> {info.dailyLimit}</p>
                             </div>
-                            <p className="text-sm mt-1"><strong>Regulatory Status:</strong> {info.regulatoryStatus}</p>
-                            <p className="text-sm mt-1"><strong>Recommended Limit:</strong> {info.dailyLimit}</p>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
                     </div>
                   </div>
                   
@@ -511,20 +680,29 @@ const IngredientAnalysis: React.FC<IngredientAnalysisProps> = ({ ingredients, is
                     <Info className="h-4 w-4" />
                     <AlertDescription>
                       This analysis is based on current scientific understanding and regulatory information. 
-                      Individual responses to additives may vary, and research is ongoing for many ingredients.
+                      Individual responses to ingredients may vary, and research is ongoing for many substances.
                     </AlertDescription>
                   </Alert>
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No common additives with known health impacts were detected in the ingredients list.
+                  No common additives or concerning ingredients with known health impacts were detected in the ingredients list.
                   This may indicate a product with minimal processed ingredients.
                 </p>
               )}
               
               <div className="mt-4">
                 <h4 className="text-md font-medium mb-2">Consumption Recommendations</h4>
-                {healthRiskScore > 60 ? (
+                {alcoholicIngredients.length > 0 ? (
+                  <Alert variant="destructive">
+                    <HeartCrack className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Alcohol Warning:</strong> This product contains alcohol which should be consumed responsibly
+                      and in moderation, if at all. Not recommended for pregnant women, individuals under the legal
+                      drinking age, those with liver conditions, or when operating vehicles or machinery.
+                    </AlertDescription>
+                  </Alert>
+                ) : healthRiskScore > 60 ? (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
@@ -660,6 +838,11 @@ const calculateHealthRiskScore = (
       // Add additional risk for certain categories
       if (info.category === "preservative" || info.category === "color") {
         totalRiskScore += 10;
+      }
+      
+      // Add extra risk for alcoholic substances
+      if (info.category === "alcoholic beverage" || info.category === "psychoactive substance") {
+        totalRiskScore += 50;
       }
     }
   });
